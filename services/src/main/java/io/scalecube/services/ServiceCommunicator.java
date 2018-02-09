@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface ServiceCommunicator {
 
-  void send(Address address, Message requestMessage);
+  void send(Address address, Message message);
 
   Address address();
 
