@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import rx.Observable;
 
-public final class ServerStream extends MessageStream {
+public final class ServerStream extends ServiceMessageStream {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ServerStream.class);
 
@@ -64,7 +64,7 @@ public final class ServerStream extends MessageStream {
   public static void main(String[] args) throws Exception {
     NettyBootstrapFactory.createNew().configureInstance();
 
-    ServerStream serverStream = MessageStream.bindServerStream();
+    ServerStream serverStream = ServiceMessageStream.bindServerStream();
     serverStream.listenReadSuccess().subscribe(event -> {
       System.out.println(event);
       serverStream.send(event.getMessage().get());

@@ -7,7 +7,7 @@ import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
-public abstract class MessageStream {
+public abstract class ServiceMessageStream {
 
   private final Subject<Event, Event> eventSubject = PublishSubject.<Event>create().toSerialized();
 
