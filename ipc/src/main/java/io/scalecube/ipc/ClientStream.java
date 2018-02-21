@@ -50,7 +50,7 @@ public final class ClientStream extends MessageStream {
     Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
       System.out.println("Sending ...");
       try {
-        clientStream.send(Address.create("192.168.1.6", 4801), ServiceMessage.withQualifier("hola").build());
+        clientStream.send(Address.create("127.0.1.1", 5801), ServiceMessage.withQualifier("hola").build());
       } catch (Exception e) {
         e.printStackTrace(System.err);
       }

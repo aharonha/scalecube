@@ -18,7 +18,7 @@ public final class ServerStream extends MessageStream {
   private volatile NettyServerTransport serverTransport; // optional
 
   ServerStream() {
-    // Hint: this is special case when server stream works on top of existing server channels
+    // Hint: this is special case when server stream works on top of existing server channel
     serverTransport = null;
   }
 
