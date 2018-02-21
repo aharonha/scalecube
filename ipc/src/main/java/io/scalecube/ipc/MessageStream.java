@@ -3,11 +3,14 @@ package io.scalecube.ipc;
 import static io.scalecube.ipc.netty.NettyBootstrapFactory.clientBootstrap;
 import static io.scalecube.ipc.netty.NettyBootstrapFactory.serverBootstrap;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
+
 import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
-public abstract class ServiceMessageStream {
+public abstract class MessageStream {
 
   private final Subject<Event, Event> eventSubject = PublishSubject.<Event>create().toSerialized();
 
@@ -18,11 +21,19 @@ public abstract class ServiceMessageStream {
   }
 
   public static ServerStream bindServerStream() {
-    return new ServerStream(serverBootstrap(), ServerStreamConfig.defaultConfig());
+    return bindServerStream(serverBootstrap());
+  }
+
+  public static ServerStream bindServerStream(ServerBootstrap serverBootstrap) {
+    return new ServerStream(serverBootstrap, ServerStreamConfig.defaultConfig());
   }
 
   public static ClientStream newClientStream() {
-    return new ClientStream(clientBootstrap());
+    return newClientStream(clientBootstrap());
+  }
+
+  public static ClientStream newClientStream(Bootstrap clientBootstrap) {
+    return new ClientStream(clientBootstrap);
   }
 
   //// Methods

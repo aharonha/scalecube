@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public final class ClientStream extends ServiceMessageStream {
+public final class ClientStream extends MessageStream {
 
   private final NettyClientTransport clientTransport;
 
@@ -36,7 +36,7 @@ public final class ClientStream extends ServiceMessageStream {
   public static void main(String[] args) throws Exception {
     NettyBootstrapFactory.createNew().configureInstance();
 
-    ClientStream clientStream = ServiceMessageStream.newClientStream();
+    ClientStream clientStream = MessageStream.newClientStream();
     clientStream.listenWriteError().subscribe(System.err::println, System.err::println, System.err::println);
     clientStream.listenWriteSuccess()
         .subscribe(event -> System.out.println(">>> sent: " + event.getMessage().get()),
