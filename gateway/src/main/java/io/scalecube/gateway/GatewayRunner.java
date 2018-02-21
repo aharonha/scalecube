@@ -2,6 +2,7 @@ package io.scalecube.gateway;
 
 import io.scalecube.gateway.http.GatewayHttpServer;
 import io.scalecube.gateway.socketio.GatewaySocketIOServer;
+import io.scalecube.ipc.MessageStream;
 import io.scalecube.ipc.ServerStream;
 import io.scalecube.ipc.netty.NettyBootstrapFactory;
 
@@ -10,7 +11,7 @@ public final class GatewayRunner {
   public static void main(String[] args) throws Exception {
     NettyBootstrapFactory.createNew().configureInstance();
 
-    ServerStream serverStream = new ServerStream();
+    ServerStream serverStream = MessageStream.newServerStream();
     serverStream.listenReadSuccess().subscribe(event -> serverStream.send(event.getMessage().get()));
 
     GatewaySocketIOServer.onPort(4040, serverStream::subscribe).start();

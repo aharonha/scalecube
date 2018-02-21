@@ -1,20 +1,33 @@
 package io.scalecube.ipc;
 
+import io.scalecube.ipc.netty.NettyBootstrapFactory;
+import io.scalecube.ipc.netty.NettyServerTransport;
+import io.scalecube.ipc.netty.NettyServiceChannelInitializer;
+
+import io.netty.bootstrap.ServerBootstrap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
-import rx.subjects.PublishSubject;
-import rx.subjects.Subject;
 
-public final class ServerStream {
+public final class ServerStream extends MessageStream {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ServerStream.class);
 
-  private final Subject<Event, Event> eventSubject = PublishSubject.<Event>create().toSerialized();
+  private volatile NettyServerTransport serverTransport; // optional
 
-  public void subscribe(ChannelContext channelContext) {
-    channelContext.subscribe(eventSubject);
+  ServerStream() {
+    // Hint: this is special case when server stream works on top of existing server channels
+    serverTransport = null;
+  }
+
+  ServerStream(ServerBootstrap serverBootstrap, ServerStreamConfig config) {
+    // Hint: this is server stream which works on self allocated server channel
+    ServerBootstrap serverBootstrap1 =
+        serverBootstrap.childHandler(new NettyServiceChannelInitializer(this::subscribe));
+    NettyServerTransport serverTransport = new NettyServerTransport(serverBootstrap1, config);
+    serverTransport.bind().thenAccept(transport1 -> this.serverTransport = transport1);
   }
 
   public void send(ServiceMessage message) {
@@ -32,6 +45,7 @@ public final class ServerStream {
     });
   }
 
+  @Override
   public Observable<Event> listenReadSuccess() {
     return listen().filter(Event::isReadSuccess).map(event -> {
       ServiceMessage message = event.getMessage().get();
@@ -40,19 +54,22 @@ public final class ServerStream {
     });
   }
 
-  public Observable<Event> listenReadError() {
-    return listen().filter(Event::isReadError);
+  @Override
+  public void close() {
+    if (serverTransport != null) {
+      serverTransport.unbind();
+    }
   }
 
-  public Observable<Event> listenWriteSuccess() {
-    return listen().filter(Event::isWriteSuccess);
-  }
+  public static void main(String[] args) throws Exception {
+    NettyBootstrapFactory.createNew().configureInstance();
 
-  public Observable<Event> listenWriteError() {
-    return listen().filter(Event::isWriteError);
-  }
+    ServerStream serverStream = MessageStream.bindServerStream();
+    serverStream.listenReadSuccess().subscribe(event -> {
+      System.out.println(event);
+      serverStream.send(event.getMessage().get());
+    });
 
-  private Observable<Event> listen() {
-    return eventSubject.onBackpressureBuffer().asObservable();
+    Thread.currentThread().join();
   }
 }

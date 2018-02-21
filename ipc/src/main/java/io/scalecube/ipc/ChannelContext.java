@@ -76,10 +76,15 @@ public final class ChannelContext {
   }
 
   public void subscribe(Subject<Event, Event> eventSubject) {
-    listen().subscribe(eventSubject::onNext, this::handleOnError);
+    listen().subscribe(eventSubject::onNext, this::onError, this::onCompleted);
   }
 
-  private void handleOnError(Throwable throwable) {
+  private void onCompleted() {
+    // at this point eventSubject not listening anymore to this channel context
+    LOGGER.debug("Unsubscribed {} due to completion", this);
+  }
+
+  private void onError(Throwable throwable) {
     // at this point eventSubject not listening anymore to this channel context
     LOGGER.error("Unsubscribed {} due to unhandled exception caught: {}", this, throwable);
   }

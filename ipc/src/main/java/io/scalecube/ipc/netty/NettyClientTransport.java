@@ -1,10 +1,6 @@
 package io.scalecube.ipc.netty;
 
-import static io.scalecube.ipc.netty.NettyBootstrapFactory.clientBootstrap;
-
 import io.scalecube.ipc.ChannelContext;
-import io.scalecube.ipc.ClientStream;
-import io.scalecube.ipc.ServiceMessage;
 import io.scalecube.transport.Address;
 
 import io.netty.bootstrap.Bootstrap;
@@ -14,8 +10,6 @@ import io.netty.channel.ChannelFutureListener;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public final class NettyClientTransport {
@@ -24,8 +18,8 @@ public final class NettyClientTransport {
 
   private final ConcurrentMap<Address, CompletableFuture<ChannelContext>> outgoingChannels = new ConcurrentHashMap<>();
 
-  public NettyClientTransport(Consumer<ChannelContext> channelContextConsumer) {
-    this.clientBootstrap = clientBootstrap().handler(new NettyServiceChannelInitializer(channelContextConsumer));
+  public NettyClientTransport(Bootstrap clientBootstrap, Consumer<ChannelContext> channelContextConsumer) {
+    this.clientBootstrap = clientBootstrap.handler(new NettyServiceChannelInitializer(channelContextConsumer));
   }
 
   public CompletableFuture<ChannelContext> getOrConnect(Address address) {
@@ -72,31 +66,5 @@ public final class NettyClientTransport {
         });
       }
     }
-  }
-
-  public static void main(String[] args) throws Exception {
-    NettyBootstrapFactory.createNew().configureInstance();
-
-    ClientStream clientStream = new ClientStream();
-    clientStream.listenWriteError().subscribe(System.err::println, System.err::println, System.err::println);
-    clientStream.listenWriteSuccess()
-        .subscribe(event -> System.out.println(">>> sent: " + event.getMessage().get()),
-            System.err::println,
-            () -> System.out.println("listenWriteSuccess Completed"));
-    clientStream.listenReadSuccess()
-        .subscribe(event -> System.out.println("<<< received: " + event.getMessage().get()),
-            System.err::println,
-            () -> System.out.println("listenReadSuccess Completed"));
-
-    Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-      System.out.println("Sending ...");
-      try {
-        clientStream.send(Address.create("192.168.1.6", 4801), ServiceMessage.withQualifier("hola").build());
-      } catch (Exception e) {
-        e.printStackTrace(System.err);
-      }
-    }, 0, 1, TimeUnit.SECONDS);
-
-    Thread.currentThread().join();
   }
 }

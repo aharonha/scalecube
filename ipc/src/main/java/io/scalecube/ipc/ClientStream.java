@@ -1,24 +1,21 @@
 package io.scalecube.ipc;
 
+import io.scalecube.ipc.netty.NettyBootstrapFactory;
 import io.scalecube.ipc.netty.NettyClientTransport;
 import io.scalecube.transport.Address;
 
-import rx.Observable;
-import rx.subjects.PublishSubject;
-import rx.subjects.Subject;
+import io.netty.bootstrap.Bootstrap;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-public final class ClientStream {
-
-  private final Subject<Event, Event> eventSubject = PublishSubject.<Event>create().toSerialized();
+public final class ClientStream extends MessageStream {
 
   private final NettyClientTransport clientTransport;
 
-  public ClientStream() {
-    // Hint: instead of hardcoded use of netty transport - abstract transport with interface and load concrete transport
-    // implementation from META-INF/services
-    this.clientTransport = new NettyClientTransport(channelContext -> channelContext.subscribe(eventSubject));
+  ClientStream(Bootstrap clientBootstrap) {
+    this.clientTransport = new NettyClientTransport(clientBootstrap, this::subscribe);
   }
 
   public void send(Address address, ServiceMessage message) {
@@ -30,23 +27,35 @@ public final class ClientStream {
     });
   }
 
-  public Observable<Event> listenReadSuccess() {
-    return listen().filter(Event::isReadSuccess);
+  @Override
+  public void close() {
+    clientTransport.close();
   }
 
-  public Observable<Event> listenReadError() {
-    return listen().filter(Event::isReadError);
-  }
 
-  public Observable<Event> listenWriteSuccess() {
-    return listen().filter(Event::isWriteSuccess);
-  }
+  public static void main(String[] args) throws Exception {
+    NettyBootstrapFactory.createNew().configureInstance();
 
-  public Observable<Event> listenWriteError() {
-    return listen().filter(Event::isWriteError);
-  }
+    ClientStream clientStream = MessageStream.newClientStream();
+    clientStream.listenWriteError().subscribe(System.err::println, System.err::println, System.err::println);
+    clientStream.listenWriteSuccess()
+        .subscribe(event -> System.out.println(">>> sent: " + event.getMessage().get()),
+            System.err::println,
+            () -> System.out.println("listenWriteSuccess Completed"));
+    clientStream.listenReadSuccess()
+        .subscribe(event -> System.out.println("<<< received: " + event.getMessage().get()),
+            System.err::println,
+            () -> System.out.println("listenReadSuccess Completed"));
 
-  private Observable<Event> listen() {
-    return eventSubject.onBackpressureBuffer().asObservable();
+    Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+      System.out.println("Sending ...");
+      try {
+        clientStream.send(Address.create("192.168.1.6", 4801), ServiceMessage.withQualifier("hola").build());
+      } catch (Exception e) {
+        e.printStackTrace(System.err);
+      }
+    }, 0, 1, TimeUnit.SECONDS);
+
+    Thread.currentThread().join();
   }
 }
