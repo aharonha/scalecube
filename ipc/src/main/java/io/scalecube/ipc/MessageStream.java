@@ -1,8 +1,5 @@
 package io.scalecube.ipc;
 
-import static io.scalecube.ipc.netty.NettyBootstrapFactory.clientBootstrap;
-import static io.scalecube.ipc.netty.NettyBootstrapFactory.serverBootstrap;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 
@@ -21,19 +18,19 @@ public abstract class MessageStream {
   }
 
   public static ServerStream bindServerStream() {
-    return bindServerStream(serverBootstrap());
+    return new ServerStream(ServerStreamConfig.defaultConfig(), null);
   }
 
-  public static ServerStream bindServerStream(ServerBootstrap serverBootstrap) {
-    return new ServerStream(serverBootstrap, ServerStreamConfig.defaultConfig());
+  public static ServerStream bindServerStream(ServerStreamConfig config, ServerBootstrap serverBootstrap) {
+    return new ServerStream(config, serverBootstrap);
   }
 
   public static ClientStream newClientStream() {
-    return newClientStream(clientBootstrap());
+    return new ClientStream(null);
   }
 
-  public static ClientStream newClientStream(Bootstrap clientBootstrap) {
-    return new ClientStream(clientBootstrap);
+  public static ClientStream newClientStream(Bootstrap bootstrap) {
+    return new ClientStream(bootstrap);
   }
 
   //// Methods

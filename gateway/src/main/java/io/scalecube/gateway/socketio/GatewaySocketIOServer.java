@@ -1,10 +1,12 @@
 package io.scalecube.gateway.socketio;
 
 import io.scalecube.ipc.ChannelContext;
-import io.scalecube.ipc.netty.NettyBootstrapFactory;
+import io.scalecube.ipc.netty.ServerBootstrapInstanceHolder;
 import io.scalecube.socketio.ServerConfiguration;
 import io.scalecube.socketio.SocketIOServer;
 import io.scalecube.utils.CopyingModifier;
+
+import io.netty.bootstrap.ServerBootstrap;
 
 import java.util.function.Consumer;
 
@@ -36,6 +38,10 @@ public final class GatewaySocketIOServer {
     config.port = port;
     config.channelContextConsumer = channelContextConsumer;
     return new GatewaySocketIOServer(config);
+  }
+
+  public GatewaySocketIOServer serverBootstrap(ServerBootstrap serverBootstrap) {
+    return new GatewaySocketIOServer(config.apply(config1 -> config1.serverBootstrap = serverBootstrap));
   }
 
   public GatewaySocketIOServer withSsl(SSLContext sslContext) {
@@ -93,7 +99,7 @@ public final class GatewaySocketIOServer {
 
     SocketIOServer server = SocketIOServer.newInstance(configuration);
     server.setListener(new GatewaySocketIOListener(config.channelContextConsumer));
-    server.setServerBootstrapFactory(NettyBootstrapFactory::serverBootstrap);
+    server.setServerBootstrapFactory(() -> config.serverBootstrap);
     server.start();
 
     socketIOServer = server;
@@ -122,6 +128,7 @@ public final class GatewaySocketIOServer {
     private boolean alwaysSecureWebSocketLocation = SOCKETIO_DEFAULT_ALWAYS_SECURE_WEB_SOCKET_LOCATION;
     private String remoteAddressHeader = SOCKETIO_DEFAULT_REMOTE_ADDRESS_HEADER;
     private Consumer<ChannelContext> channelContextConsumer;
+    private ServerBootstrap serverBootstrap = ServerBootstrapInstanceHolder.DEFAULT_INSTANCE;
 
     private Config() {}
 
@@ -136,6 +143,7 @@ public final class GatewaySocketIOServer {
       this.alwaysSecureWebSocketLocation = other.alwaysSecureWebSocketLocation;
       this.remoteAddressHeader = other.remoteAddressHeader;
       this.channelContextConsumer = other.channelContextConsumer;
+      this.serverBootstrap = other.serverBootstrap;
     }
   }
 }

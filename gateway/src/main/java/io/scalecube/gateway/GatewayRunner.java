@@ -5,14 +5,11 @@ import io.scalecube.gateway.socketio.GatewaySocketIOServer;
 import io.scalecube.ipc.ClientStream;
 import io.scalecube.ipc.MessageStream;
 import io.scalecube.ipc.ServerStream;
-import io.scalecube.ipc.netty.NettyBootstrapFactory;
 import io.scalecube.transport.Address;
 
 public final class GatewayRunner {
 
   public static void main(String[] args) throws Exception {
-    NettyBootstrapFactory.createNew().configureInstance();
-
     ClientStream clientStream = MessageStream.newClientStream();
     ServerStream serverStream = MessageStream.newServerStream();
 

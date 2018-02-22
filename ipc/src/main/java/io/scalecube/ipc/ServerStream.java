@@ -1,8 +1,6 @@
 package io.scalecube.ipc;
 
-import io.scalecube.ipc.netty.NettyBootstrapFactory;
 import io.scalecube.ipc.netty.NettyServerTransport;
-import io.scalecube.ipc.netty.NettyServiceChannelInitializer;
 
 import io.netty.bootstrap.ServerBootstrap;
 
@@ -22,12 +20,8 @@ public final class ServerStream extends MessageStream {
     serverTransport = null;
   }
 
-  ServerStream(ServerBootstrap serverBootstrap, ServerStreamConfig config) {
-    // Hint: this is server stream which works on self allocated server channel
-    ServerBootstrap serverBootstrap1 =
-        serverBootstrap.childHandler(new NettyServiceChannelInitializer(this::subscribe));
-    NettyServerTransport serverTransport = new NettyServerTransport(serverBootstrap1, config);
-    serverTransport.bind().thenAccept(transport1 -> this.serverTransport = transport1);
+  ServerStream(ServerStreamConfig config, ServerBootstrap serverBootstrap) {
+    new NettyServerTransport(config, serverBootstrap, this::subscribe).bind().thenAccept(t -> this.serverTransport = t);
   }
 
   public void send(ServiceMessage message) {
@@ -62,8 +56,6 @@ public final class ServerStream extends MessageStream {
   }
 
   public static void main(String[] args) throws Exception {
-    NettyBootstrapFactory.createNew().configureInstance();
-
     ServerStream serverStream = MessageStream.bindServerStream();
     serverStream.listenReadSuccess().subscribe(event -> {
       System.out.println(event);

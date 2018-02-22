@@ -1,10 +1,10 @@
 package io.scalecube.gateway.http;
 
-import static io.scalecube.ipc.netty.NettyBootstrapFactory.serverBootstrap;
-
 import io.scalecube.ipc.ChannelContext;
+import io.scalecube.ipc.netty.ServerBootstrapInstanceHolder;
 import io.scalecube.utils.CopyingModifier;
 
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
@@ -39,6 +39,10 @@ public final class GatewayHttpServer {
     return new GatewayHttpServer(config);
   }
 
+  public GatewayHttpServer serverBootstrap(ServerBootstrap serverBootstrap) {
+    return new GatewayHttpServer(config.apply(config1 -> config1.serverBootstrap = serverBootstrap));
+  }
+
   public GatewayHttpServer withSsl(SSLContext sslContext) {
     return new GatewayHttpServer(config.apply(config1 -> config1.sslContext = sslContext));
   }
@@ -71,7 +75,7 @@ public final class GatewayHttpServer {
       throw new IllegalStateException("Failed to start server: already started");
     }
 
-    serverChannel = serverBootstrap()
+    serverChannel = config.serverBootstrap
         .childHandler(new GatewayHttpChannelInitializer(config, config.channelContextConsumer))
         .bind(new InetSocketAddress(config.port))
         .syncUninterruptibly()
@@ -100,6 +104,7 @@ public final class GatewayHttpServer {
     private String accessControlAllowMethods = DEFAULT_ACCESS_CONTROL_ALLOW_METHODS;
     private int accessControlMaxAge = DEFAULT_ACCESS_CONTROL_MAX_AGE;
     private Consumer<ChannelContext> channelContextConsumer;
+    private ServerBootstrap serverBootstrap = ServerBootstrapInstanceHolder.DEFAULT_INSTANCE;
 
     private Config() {}
 
@@ -112,6 +117,7 @@ public final class GatewayHttpServer {
       this.accessControlAllowMethods = other.accessControlAllowMethods;
       this.accessControlMaxAge = other.accessControlMaxAge;
       this.channelContextConsumer = other.channelContextConsumer;
+      this.serverBootstrap = other.serverBootstrap;
     }
 
     SSLContext getSslContext() {

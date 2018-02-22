@@ -7,6 +7,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -14,12 +15,13 @@ import java.util.function.Consumer;
 
 public final class NettyClientTransport {
 
-  private final Bootstrap clientBootstrap;
+  private final Bootstrap bootstrap;
 
   private final ConcurrentMap<Address, CompletableFuture<ChannelContext>> outgoingChannels = new ConcurrentHashMap<>();
 
-  public NettyClientTransport(Bootstrap clientBootstrap, Consumer<ChannelContext> channelContextConsumer) {
-    this.clientBootstrap = clientBootstrap.handler(new NettyServiceChannelInitializer(channelContextConsumer));
+  public NettyClientTransport(Bootstrap bootstrap, Consumer<ChannelContext> channelContextConsumer) {
+    this.bootstrap = Optional.ofNullable(bootstrap).orElse(BootstrapInstanceHolder.DEFAULT_INSTANCE)
+        .handler(new NettyServiceChannelInitializer(channelContextConsumer));
   }
 
   public CompletableFuture<ChannelContext> getOrConnect(Address address) {
@@ -37,7 +39,7 @@ public final class NettyClientTransport {
 
   private CompletableFuture<ChannelContext> connect(Address address) {
     CompletableFuture<ChannelContext> promise = new CompletableFuture<>();
-    clientBootstrap.connect(address.host(), address.port())
+    bootstrap.connect(address.host(), address.port())
         .addListener((ChannelFutureListener) channelFuture -> {
           Channel channel = channelFuture.channel();
           if (!channelFuture.isSuccess()) {
