@@ -30,6 +30,20 @@ public class ServiceMessageCodecTest {
     assertEquals(src, message);
   }
 
+  @Test
+  public void testCodecWithOnlyQualifier() {
+    ServiceMessage src = ServiceMessage.withQualifier("q").build();
+    ByteBuf buf = ServiceMessageCodec.encode(src);
+    assertEquals("{\"q\":\"q\"}", buf.toString(CHARSET));
+  }
+
+  @Test
+  public void testCodecWithOnlyData() {
+    ByteBuf buf_src = Unpooled.copiedBuffer("{\"sessiontimerallowed\":1,\"losslimitallowed\":1}".getBytes());
+    ServiceMessage src = ServiceMessage.withQualifier((String) null).data(buf_src).build();
+    ByteBuf buf = ServiceMessageCodec.encode(src);
+    assertEquals("{\"data\":{\"sessiontimerallowed\":1,\"losslimitallowed\":1}}", buf.toString(CHARSET));
+  }
 
   @Test
   public void testCodecWithNullData() {

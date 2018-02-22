@@ -111,46 +111,35 @@ public final class JsonCodec {
     // writeStartObject
     targetBuf.writeByte(ASCII_OPENING_BRACE);
 
+    boolean commaHasBeenSet = false;
+
     // generic message headers
     for (int i = 0; i < flatList.size(); i++) {
       String field = flatList.get(i);
-
       Object value = mapper.apply(field);
       if (value != null) {
+        if (i > 0) {
+          targetBuf.writeByte(ASCII_COMMA);
+          commaHasBeenSet = true;
+        }
         writeCharSequence(targetBuf, field); // field
         targetBuf.writeByte(ASCII_COLON);
-        writeCharSequence(targetBuf, (String) value); // value
-
-        if (i != flatList.size() - 1) {
-          targetBuf.writeByte(ASCII_COMMA);
-        }
+        writeCharSequence(targetBuf, String.valueOf(value)); // value
       }
     }
-
-    boolean commaWasSet = false;
 
     // write data
     for (int i = 0; i < complexList.size(); i++) {
       String field = complexList.get(i);
-
       Object value = mapper.apply(field);
-      if (value != null) {
-        // at this point it's assumed 'buffer' holds already a valid JSON object
-        ByteBuf buffer = ((ByteBuf) value).slice();
-        if (buffer.readableBytes() > 0) {
-          // put comma first to delimit
-          if (!commaWasSet) {
-            targetBuf.writeByte(ASCII_COMMA);
-            commaWasSet = true;
-          }
-          writeCharSequence(targetBuf, field); // field
-          targetBuf.writeByte(ASCII_COLON);
-          targetBuf.writeBytes(buffer);
+      // at this point it's assumed 'buffer' holds already a valid JSON object
+      if (value != null && ((ByteBuf) value).isReadable()) {
+        if (commaHasBeenSet || i > 0) {
+          targetBuf.writeByte(ASCII_COMMA);
         }
-      }
-
-      if (i != complexList.size() - 1) {
-        targetBuf.writeByte(ASCII_COMMA);
+        writeCharSequence(targetBuf, field); // field
+        targetBuf.writeByte(ASCII_COLON);
+        targetBuf.writeBytes(((ByteBuf) value).slice());
       }
     }
 
